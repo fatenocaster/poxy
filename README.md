@@ -11,13 +11,13 @@ search proxy for unreachable foreign websites .
 
 Options:
 
--h --help               Display usage information and exit.
+-h --help                          Display usage information and exit.
 
--v --verbose            Display detail information.
+-v --verbose                       Display detail information.
 
--t msec --timeout=msec  Set timeout time for connection tries.
+-t msec --timeout=msec             Set timeout time for connection tries.
 
--d url --target=url     Set target url.
+-d url --target=url                Set target url.
 
--f --force              force to overwrite hosts file if target is in it.
+-f --force                         force to overwrite hosts file if target is in it.
 
