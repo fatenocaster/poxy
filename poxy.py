@@ -353,7 +353,9 @@ import locale
 import time
 
 logger = logging.getLogger()
-logging.basicConfig(format='%(levelname)s: %(asctime)s  %(message)s')
+logging.basicConfig(format='%(asctime)s  %(message)s')
+logger.BASIC = logging.WARN
+logger.DETAIL = logging.INFO
 
 
 class Agent:
@@ -441,7 +443,7 @@ class Agent:
 
     def ping(self, target):
         self.nodes.clear()
-        logger.info("starting ip collection...")
+        logger.log(logger.BASIC, "starting ip collection...")
         for guid in self.GUIDs:
             pingData = "guid={0}&host={1}&ishost=false&encode={2}&checktype=0".format(guid, target, self.enkey)
             self.startRequest(url="/iframe.ashx?t=ping&callback=")
@@ -450,8 +452,8 @@ class Agent:
             node = self.pickNode(self.parseNodeMsg(self.rawData))
             if node:
                 self.nodes.append(node)
-                logger.info("got an alpha ip:{0} delay:{1}ms".format(node["ip"], node["responsetime"]))
-        logger.info("ip collection step completed.")
+                logger.log(logger.DETAIL, "got an alpha ip:{0} delay:{1}ms".format(node["ip"], node["responsetime"]))
+        logger.log(logger.BASIC, "ip collection step completed.")
 
     def pickNode(self, msg):
         if msg.get("state"):
@@ -473,18 +475,19 @@ class Agent:
             return None
 
     def checkWebTimeout(self):
-        logger.info("checking for web connection...might take a few minutes.")
+        logger.log(logger.BASIC, "checking for web connection...might take a few minutes.")
         tmpnodes = []
         for node in self.nodes:
             wbTimeout = self.getWebDelayTime(node["ip"])
             if wbTimeout:
                 node["responsetime"] = int(wbTimeout)
                 tmpnodes.append(node)
-                logger.info("got a candidate ip:{0} delay:{1}s".format(node["ip"], node["responsetime"]))
+                logger.log(logger.DETAIL, "got a candidate ip:{0} delay:{1}s".format(node["ip"], node["responsetime"]))
         self.nodes = tmpnodes
+        logger.log(logger.BASIC, "web connection check finished.")
 
     def checkPingTimeOut(self):
-        logger.info("starting to make ping test...might take a few minutes.")
+        logger.log(logger.BASIC, "starting to make icmp ping test...might take a few minutes.")
         tmpnodes = []
         language = None
         deflocale = locale.getdefaultlocale()[0]
@@ -502,13 +505,14 @@ class Agent:
                 sm = re.search(language["lost"], info)
                 node["lost"] = int(sm.group(1))
                 tmpnodes.append(node)
-                logger.info("got a beta ip:{0} delay:{1}ms".format(node["ip"], node["responsetime"]))
+                logger.log(logger.DETAIL, "got a beta ip:{0} delay:{1}ms".format(node["ip"], node["responsetime"]))
             except subprocess.CalledProcessError:
                 pass
             except ... as err:
                 logger.log(logging.ERROR, err)
                 sys.exit(1)
         self.nodes = tmpnodes
+        logger.log(logger.BASIC, "icmp ping test finished.")
 
     def getFastestNode(self):
         self.checkPingTimeOut()
@@ -525,8 +529,9 @@ class Agent:
                 elif int(fnode["lost"]) == int(nodetmp["lost"]):
                     if int(fnode["ttl"]) < int(nodetmp["ttl"]):
                         fnode = nodetmp
-        logger.info(
-            "found the fatest ip:{0} delay:{1}s ttl:{2}".format(fnode["ip"], fnode["responsetime"], fnode["ttl"]))
+        logger.log(logger.DETAIL,
+                   "found the fatest ip:{0} delay:{1}s ttl:{2}".format(fnode["ip"], fnode["responsetime"],
+                                                                       fnode["ttl"]))
         return fnode
 
     def saveToHost(self, fnode, target):
@@ -545,8 +550,9 @@ class Agent:
                 else:
                     cnt = "\n" + fnode["ip"] + "  " + target
                 fp.write(cnt)
-                logger.info(
-                    "successfully added ip: {0} addr:{1} for target {2}.".format(fnode["ip"], fnode["ipaddress"], target))
+                logger.log(logger.BASIC,
+                           "successfully added ip: {0} addr:{1} for target {2}.".format(fnode["ip"], fnode["ipaddress"],
+                                                                                        target))
             else:
                 logger.warning("target: {0} is already in your hosts file.".format(target))
         except OSError as err:
@@ -576,7 +582,7 @@ class Agent:
             target = target[2]
         else:
             target = target[1]
-        logger.info("target:{0}".format(target))
+        logger.log(logger.BASIC, "target:{0}".format(target))
         data = "host={0}&checktype=0&linetype=海外".format(target)
         self.startRequest()
         self.getRawData(data)
@@ -600,7 +606,7 @@ def usage(exit_status):
 
 def show_version():
     """Show the program version."""
-    print('Version %s on Python%s' % (platform.python_version(), sys.version_info[0]))
+    logger.log(logger.BASIC, "Version %s on Python%s" % (platform.python_version(), sys.version_info[0]))
 
 
 def main():
@@ -613,12 +619,12 @@ def main():
         usage(2)
     timeout = 0
     target = ""
+    show_version()
     for opt, arg in opts:
         if opt in ("-h", "help"):
             usage(0)
         elif opt in ("-v", "verbose"):
-            show_version()
-            logger.setLevel(logging.DEBUG)
+            logger.setLevel(logger.DETAIL)
         elif opt in ("-t", "timeout"):
             timeout = arg
         elif opt in ("-d", "target"):
@@ -637,3 +643,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    logger.log(logger.DETAIL, "detail message")
+    logger.log(logger.BASIC, "basic message")
