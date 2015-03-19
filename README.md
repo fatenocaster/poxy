@@ -1,6 +1,8 @@
 # poxy
 a useful tool to get to the website which is walled.
 
+only support windows with IPV4 at present.
+
 now it support zh_CN and en_US locale.
 
 NOTE: before using it, you have to get the r/w permission of hosts file.
@@ -21,3 +23,4 @@ Options:
 
 -f --force                         force to overwrite hosts file if target is in it.
 
+-e --enhance                       choose an enhance mode.it would be slower.
