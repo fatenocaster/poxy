@@ -352,6 +352,11 @@ import subprocess
 import locale
 import time
 import html.parser
+import urllib.request
+import winreg
+
+import htmldom.htmldom
+
 
 logger = logging.getLogger()
 logging.basicConfig(format='%(asctime)s  %(message)s')
@@ -360,6 +365,10 @@ logger.DETAIL = logging.INFO
 
 
 class WebHTMLParser(html.parser.HTMLParser):
+    """
+    this is a special class for parse super-ping website data.
+    """
+
     def __init__(self):
         super().__init__()
         self.time_to_get_location = False
@@ -384,11 +393,25 @@ class Agent:
         self.ChinaZ = 0
         self.SuperPing = 1
         self.forceModel = False
-        self.enhanceModel = False
+        self.Model = {"alternate": self.huntTrueIp, "proxy": self.huntProxy}
+        self.ModelLevel = 1
+        self.ModelChose = None
+        self.xici_proxy_location_wt = {"url": "http://www.xici.net.co/wt/", "table": "table[id=ip_list]", "ip": 2,
+                                       "port": 3,
+                                       "ipaddress": 4}
+        self.xici_proxy_location_wn = {"url": "http://www.xici.net.co/wn/", "table": "table[id=ip_list]", "ip": 2,
+                                       "port": 3,
+                                       "ipaddress": 4}
+        self.google_proxy_location = {"url": "http://www.google-proxy.net/", "table": "table[id=proxylisttable]",
+                                      "ip": 0, "port": 1,
+                                      "ipaddress": 3}
+        self.ProxyLevelSwitch = {1: self.xici_proxy_location_wt, 2: self.xici_proxy_location_wn,
+                                 3: self.google_proxy_location}
         self.port = 80
-        self.currentHost = self.ChinaZ
-        self.client = http.client.HTTPConnection(self.host[self.currentHost], self.port)
-        self.client.timeout = timeout  # should not be short like 100 otherwise it may fail to connect.
+        self.currentHost = 1
+        self.client = None
+        self.target = None
+        self.timeout = timeout  # should not be short like 100 otherwise it may fail to connect.
         self.rawData = ""
         self.GUIDs = []
         self.enkey = ""
@@ -407,7 +430,8 @@ class Agent:
         self.localTestDict_en = {"responsetime": "Average[\s]*=[\s]*([\d]+)ms", "ttl": "TTL[\s]*=[\s]*([\d]+)",
                                  "lost": "Lost[\s]*=[\s]*[\d]+[\s]*\(([\d]+)%"}
 
-    def parseTarget(self, target):
+    @staticmethod
+    def parseTarget(target):
         target = urllib.parse.urlparse(target)
         if target[1] == "":
             target = target[2]
@@ -478,7 +502,6 @@ class Agent:
         return msg
 
     def ChinaZPing(self, target):
-        self.nodes.clear()
         logger.log(logger.BASIC, "starting basic mode ip collection...")
         for guid in self.GUIDs:
             pingData = "guid={0}&host={1}&ishost=false&encode={2}&checktype=0".format(guid, target, self.enkey)
@@ -487,8 +510,7 @@ class Agent:
             self.getRawData(pingData)
             node = self.pickNode(self.parseNodeMsg(self.rawData))
             if node:
-                self.nodes.append(node)
-                logger.log(logger.DETAIL, "got an alpha ip:{0} delay:{1}ms".format(node["ip"], node["responsetime"]))
+                self.saveNode(node)
         logger.log(logger.BASIC, "basic mode ip collection step completed.")
 
     def superPing(self, pindData):
@@ -498,8 +520,7 @@ class Agent:
             self.getRawData("")
             node = self.parseNodeMsg(self.rawData)
             if node:
-                self.nodes.append(node)
-                logger.log(logger.DETAIL, "got an alpha ip:{0} delay:{1}ms".format(node["ip"], node["responsetime"]))
+                self.saveNode(node)
         logger.log(logger.BASIC, "enhanced mode ip collection step completed.")
 
     def pickNode(self, msg):
@@ -513,18 +534,50 @@ class Agent:
                 if msg.get("responsetime") is not None and msg.get("ttl") is not None:
                     return msg
 
+    def saveNode(self, node):
+        assert isinstance(node, dict)
+        found = False
+        for inode in self.nodes:
+            if inode["ip"] == node["ip"]:
+                found = True
+        if not found:
+            self.nodes.append(node)
+            logger.log(logger.DETAIL, "got an alpha ip:{0} delay:{1}ms".format(node["ip"], node["responsetime"]))
+
     def getWebDelayTime(self, _host):
-        chk = http.client.HTTPConnection(_host)
+        chk = http.client.HTTPConnection(_host, self.port, self.client.timeout)
+        rtn = None
         try:
             tick = time.perf_counter()
             chk.connect()
             chk.request("GET", "/")
             chk.getresponse().read()
             chk.close()
-            return time.perf_counter() - tick
+            rtn = time.perf_counter() - tick
         except Exception:
-            chk.close()
-            return None
+            pass
+        chk.close()
+        return rtn
+
+    def getProxyDelayTime(self, ip, port):
+        rq = urllib.request.Request(self.target)
+        rq.set_proxy(ip + ":" + port, self.getScheme())
+        rtn = None
+        try:
+            tick = time.perf_counter()
+            response = urllib.request.urlopen(rq, timeout=5)
+            response.read()
+            rtn = time.perf_counter() - tick
+        except Exception as err:
+            pass
+        return rtn
+
+    def getScheme(self):
+        url_type = urllib.parse.urlparse(self.target)
+        if url_type.scheme:
+            return url_type.scheme
+        else:
+            return "http"
 
     def checkWebTimeout(self):
         logger.log(logger.BASIC, "checking for web connection...might take a few minutes.")
@@ -537,6 +590,21 @@ class Agent:
                 logger.log(logger.DETAIL, "got a candidate ip:{0} delay:{1}s".format(node["ip"], node["responsetime"]))
         self.nodes = tmpnodes
         logger.log(logger.BASIC, "web connection check finished.")
+
+    def checkProxyTimeOut(self):
+        logger.log(logger.BASIC, "starting to check proxy delay time...might take a few minutes.")
+        tmpnodes = []
+        for node in self.nodes:
+            pytimeout = self.getProxyDelayTime(node["ip"], node["port"])
+            if pytimeout:
+                node["responsetime"] = float(pytimeout)
+                tmpnodes.append(node)
+                logger.log(logger.DETAIL,
+                           "got a candidate proxy: {0}:{1} addr:{2} delay:{3}s".format(node["ip"], node["port"],
+                                                                                      node["ipaddress"],
+                                                                                      node["responsetime"]))
+        self.nodes = tmpnodes
+        logger.log(logger.BASIC, "proxy delay time checking complete.")
 
     def checkPingTimeOut(self):
         logger.log(logger.BASIC, "starting to make ICMP ping test...might take a few minutes.")
@@ -569,24 +637,43 @@ class Agent:
     def getFastestNode(self):
         self.checkPingTimeOut()
         self.checkWebTimeout()
-        fnode = self.nodes[0]
-        for i in range(1, len(self.nodes)):
-            assert isinstance(fnode, dict)
-            nodetmp = self.nodes[i]
-            if float(fnode["responsetime"]) > float(nodetmp["responsetime"]):
-                fnode = nodetmp
-            elif float(fnode["responsetime"]) == float(nodetmp["responsetime"]):
-                if float(fnode["lost"]) > float(nodetmp["lost"]):
+        try:
+            fnode = self.nodes[0]
+            for i in range(1, len(self.nodes)):
+                assert isinstance(fnode, dict)
+                nodetmp = self.nodes[i]
+                if float(fnode["responsetime"]) > float(nodetmp["responsetime"]):
                     fnode = nodetmp
-                elif float(fnode["lost"]) == float(nodetmp["lost"]):
-                    if float(fnode["ttl"]) < float(nodetmp["ttl"]):
+                elif float(fnode["responsetime"]) == float(nodetmp["responsetime"]):
+                    if float(fnode["lost"]) > float(nodetmp["lost"]):
                         fnode = nodetmp
-        logger.log(logger.DETAIL,
-                   "found the fatest ip:{0} delay:{1}s ttl:{2}".format(fnode["ip"], fnode["responsetime"],
-                                                                       fnode["ttl"]))
+                    elif float(fnode["lost"]) == float(nodetmp["lost"]):
+                        if float(fnode["ttl"]) < float(nodetmp["ttl"]):
+                            fnode = nodetmp
+            logger.log(logger.DETAIL,
+                       "found the fatest ip:{0} delay:{1}s ttl:{2}".format(fnode["ip"], fnode["responsetime"],
+                                                                           fnode["ttl"]))
+        except IndexError:
+            logger.log(logger.BASIC, "cannot get any effective ip!")
+            sys.exit(1)
+        return fnode
+
+    def getFastestProxy(self):
+        self.checkProxyTimeOut()
+        fnode = None
+        try:
+            fnode = self.nodes[0]
+            for i in range(1, len(self.nodes)):
+                assert isinstance(fnode, dict)
+                nodetmp = self.nodes[i]
+                if float(fnode["responsetime"]) > float(nodetmp["responsetime"]):
+                    fnode = nodetmp
+        except IndexError:
+            sys.exit(1)
         return fnode
 
     def saveToHost(self, fnode, target):
+        fp = None
         try:
             if self.forceModel:
                 self.erase(target)
@@ -609,10 +696,48 @@ class Agent:
                 logger.warning("target: {0} is already in your hosts file.".format(target))
         except OSError as err:
             logger.log(logging.ERROR, err)
-        except Exception:
-            logger.log(logging.ERROR, Exception)
+        except KeyError as err:
+            logger.log(logging.ERROR, "no effective ip addr.")
+        except ...:
+            pass
         finally:
-            fp.close()
+            if fp:
+                fp.close()
+
+    def saveToProxy(self, proxy):
+        try:
+            if self.forceModel:
+                self.erase(self.parseTarget(self.target))
+            proxy_setting_root = 'Software\Microsoft\Windows\CurrentVersion\Internet Settings'
+            reg = winreg.CreateKey(winreg.HKEY_CURRENT_USER, proxy_setting_root)
+            winreg.SetValueEx(reg, "ProxyEnable", 0, winreg.REG_DWORD, 1)
+            winreg.SetValueEx(reg, "ProxyServer", 0, winreg.REG_SZ, proxy["ip"] + ":" + proxy["port"])
+            winreg.CloseKey(reg)
+            logger.log(logger.BASIC,
+                       "successfully added proxy: {0}:{1} addr:{2}.".format(proxy["ip"], proxy["port"],
+                                                                         proxy["ipaddress"]))
+        except Exception as err:
+            logger.log(logging.ERROR, err)
+
+    @staticmethod
+    def disableProxy():
+        try:
+            proxy_setting_root = 'Software\Microsoft\Windows\CurrentVersion\Internet Settings'
+            reg = winreg.CreateKey(winreg.HKEY_CURRENT_USER, proxy_setting_root)
+            winreg.SetValueEx(reg, "ProxyEnable", 0, winreg.REG_DWORD, 0)
+            winreg.CloseKey(reg)
+        except Exception as err:
+            logger.log(logging.ERROR, err)
+
+    @staticmethod
+    def enableProxy():
+        try:
+            proxy_setting_root = 'Software\Microsoft\Windows\CurrentVersion\Internet Settings'
+            reg = winreg.CreateKey(winreg.HKEY_CURRENT_USER, proxy_setting_root)
+            winreg.SetValueEx(reg, "ProxyEnable", 0, winreg.REG_DWORD, 1)
+            winreg.CloseKey(reg)
+        except Exception as err:
+            logger.log(logging.ERROR, err)
 
     def erase(self, target):
         """
@@ -630,7 +755,7 @@ class Agent:
 
     def crawlChinaZProxyList(self, target):
         self.currentHost = self.ChinaZ
-        self.client = http.client.HTTPConnection(self.host[self.currentHost], self.port)
+        self.client = http.client.HTTPConnection(self.host[self.currentHost], self.port, self.timeout)
         logger.log(logger.BASIC, "target:{0}".format(target))
         data = "host={0}&checktype=0&linetype=海外".format(target)
         self.startRequest()
@@ -640,7 +765,7 @@ class Agent:
 
     def crawlSuperPingProxyList(self, target):
         self.currentHost = self.SuperPing
-        self.client = http.client.HTTPConnection(self.host[self.currentHost], self.port)
+        self.client = http.client.HTTPConnection(self.host[self.currentHost], self.port, self.timeout)
         try:
             self.startRequest("GET", "/?ping={0}&locale=en".format(target))
             self.getRawData("")
@@ -659,12 +784,38 @@ class Agent:
         except Exception as err:
             logger.log(logging.ERROR, err)
 
-    def hunt(self, target):
-        target = self.parseTarget(target)
+    def collect_proxies(self, proxy_table):
+        logger.log(logger.BASIC, "starting to collect proxy...might take a few minutes.")
+        dom = htmldom.htmldom.HtmlDom(proxy_table["url"]).createDom()
+        proxy_info = dom.find(proxy_table["table"])
+        for elm in proxy_info.find("tr."):
+            ips = elm.find("td")
+            info = {}
+            try:
+                info["ip"] = ips[proxy_table["ip"]].text()
+                info["port"] = ips[proxy_table["port"]].text()
+                info["ipaddress"] = ips[proxy_table["ipaddress"]].text()
+                self.nodes.append(info)
+            except Exception as err:
+                pass
+        pass
+        logger.log(logger.BASIC, "proxy collection complete.")
+
+    def huntTrueIp(self):
+        target = self.parseTarget(self.target)
         self.crawlChinaZProxyList(target)
-        if self.enhanceModel:
+        if self.ModelLevel == 2:
             self.crawlSuperPingProxyList(target)
         self.saveToHost(self.getFastestNode(), target)
+
+    def huntProxy(self):
+        self.disableProxy()
+        self.collect_proxies(self.ProxyLevelSwitch[self.ModelLevel])
+        self.saveToProxy(self.getFastestProxy())
+        self.enableProxy()
+
+    def hunt(self):
+        self.Model[self.ModelChose]()
 
 
 def usage(exit_status):
@@ -676,7 +827,8 @@ def usage(exit_status):
     msg += '-t msec --timeout=msec  Set timeout time for connection tries.default is 1000ms\n'
     msg += '-d url --target=url     Set target url.\n'
     msg += '-f --force              force to overwrite hosts file if target is in it.\n'
-    msg += '-e --enhance            choose an enhance mode.it would be slower.\n'
+    msg += '--model=X                 choose an model: proxy or alternate\n'
+    msg += '--modellevel=X            set model level: 1 or greater.\n'
     print(msg)
     sys.exit(exit_status)
 
@@ -690,35 +842,34 @@ def main():
     global opts, opts
     agt = Agent()
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "d:efht:v",
-                                   ["timeout=", "help", "version", "target=", "force", "enhance"])
+        opts, args = getopt.getopt(sys.argv[1:], "d:fht:v",
+                                   ["timeout=", "help", "version", "target=", "force", "model=", "modellevel="])
     except getopt.GetoptError as err:
         logger.log(logging.ERROR, err)
         usage(2)
-    timeout = 0
-    target = ""
     show_version()
     for opt, arg in opts:
-        if opt in ("-h", "help"):
-            usage(0)
-        elif opt in ("-v", "verbose"):
-            logger.setLevel(logger.DETAIL)
-        elif opt in ("-t", "timeout"):
-            timeout = arg
-        elif opt in ("-d", "target"):
-            target = arg
-        elif opt in ("-f", "force"):
-            agt.forceModel = True
-        elif opt in ("-e", "enhance"):
-            agt.enhanceModel = True
-    try:
-        agt.client.timeout = int(timeout)
-    except ValueError as err:
-        logger.log(logging.ERROR, err)
-        sys.exit(1)
-    if len(opts) == 0 or target == "":
+        try:
+            if opt in ("-h", "--help"):
+                usage(0)
+            elif opt in ("-v", "--verbose"):
+                logger.setLevel(logger.DETAIL)
+            elif opt in ("-t", "--timeout"):
+                agt.timeout = int(arg)
+            elif opt in ("-d", "--target"):
+                agt.target = arg
+            elif opt in ("-f", "--force"):
+                agt.forceModel = True
+            elif opt in ("", "--model"):
+                agt.ModelChose = arg
+            elif opt in ("", "--modellevel"):
+                agt.ModelLevel = int(arg)
+        except ValueError as err:
+            logger.log(logging.ERROR, err)
+            sys.exit(1)
+    if len(opts) == 0 or agt.target is None or agt.ModelChose is None:
         usage(2)
-    agt.hunt(target)
+    agt.hunt()
 
 
 if __name__ == "__main__":
