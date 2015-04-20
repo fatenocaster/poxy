@@ -14,14 +14,23 @@ search proxy for unreachable foreign websites .
 Options:
 
 Usage: poxy.py [OPTIONS]
+
 search proxy for unreachable foreign websites .
+
 Options:
+
 -h --help               Display usage information and exit.
+
 -v --verbose            Display detail information.
+
 -t msec --timeout=msec  Set timeout time for connection tries.default is 1000ms
+
 -d url --target=url     Set target url.
+
 -f --force              force to overwrite hosts file if target is in it.
+
 --model=X                 choose an model: proxy or alternate
+
 --modellevel=X            set model level: 1 or greater.
 
 example:
