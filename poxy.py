@@ -710,7 +710,6 @@ class Agent:
                 self.erase(self.parseTarget(self.target))
             proxy_setting_root = 'Software\Microsoft\Windows\CurrentVersion\Internet Settings'
             reg = winreg.CreateKey(winreg.HKEY_CURRENT_USER, proxy_setting_root)
-            winreg.SetValueEx(reg, "ProxyEnable", 0, winreg.REG_DWORD, 1)
             winreg.SetValueEx(reg, "ProxyServer", 0, winreg.REG_SZ, proxy["ip"] + ":" + proxy["port"])
             winreg.CloseKey(reg)
             logger.log(logger.BASIC,
@@ -720,24 +719,20 @@ class Agent:
             logger.log(logging.ERROR, err)
 
     @staticmethod
-    def disableProxy():
+    def proxyEnable(enable):
         try:
             proxy_setting_root = 'Software\Microsoft\Windows\CurrentVersion\Internet Settings'
             reg = winreg.CreateKey(winreg.HKEY_CURRENT_USER, proxy_setting_root)
-            winreg.SetValueEx(reg, "ProxyEnable", 0, winreg.REG_DWORD, 0)
+            winreg.SetValueEx(reg, "ProxyEnable", 0, winreg.REG_DWORD, bool(enable))
             winreg.CloseKey(reg)
         except Exception as err:
             logger.log(logging.ERROR, err)
 
-    @staticmethod
-    def enableProxy():
-        try:
-            proxy_setting_root = 'Software\Microsoft\Windows\CurrentVersion\Internet Settings'
-            reg = winreg.CreateKey(winreg.HKEY_CURRENT_USER, proxy_setting_root)
-            winreg.SetValueEx(reg, "ProxyEnable", 0, winreg.REG_DWORD, 1)
-            winreg.CloseKey(reg)
-        except Exception as err:
-            logger.log(logging.ERROR, err)
+    def disableProxy(self):
+        self.proxyEnable(False)
+
+    def enableProxy(self):
+        self.proxyEnable(True)
 
     def erase(self, target):
         """
