@@ -12,13 +12,15 @@ logging.basicConfig(format='%(asctime)s  %(message)s')
 logger.BASIC = logging.WARN
 logger.DETAIL = logging.INFO
 
+DEFAULT_TIMEOUT = 3000
+
 
 class WebClient():
     def __init__(self):
         self.client = None
         self.target = None
 
-    def set_target(self, host, port=None, timeout=5):
+    def set_target(self, host, port=80, timeout=DEFAULT_TIMEOUT):
         self.client = http.client.HTTPConnection(host, port, timeout)
         self.target = host
 
@@ -33,6 +35,11 @@ class WebClient():
         self.client.putheader('Content-Type', 'application/x-www-form-urlencoded')
         self.client.putheader('DNT', '1')
 
+    def putheader(self, header, value):
+        assert isinstance(header, str)
+        assert isinstance(value, str)
+        self.client.putheader(header, value)
+
     def start_request(self, method="POST", url="/", data=None):
         """
         :param method:
@@ -40,20 +47,25 @@ class WebClient():
         :param data: data to send to server.
         :return: str
         """
+        raw_data = None
         try:
             self.client.connect()
-        except TimeoutError as err:
+            if method == "GET":
+                self.client.putrequest(method, url + data)
+                data = ""
+            else:
+                self.client.putrequest(method, url)
+            data = urllib.parse.quote(data, '=&')
+            self.client.putheader('Content-Length', len(data))
+            self.put_def_header()
+            self.client.endheaders()
+            self.client.send(data.encode())
+            anwser = self.client.getresponse()
+            if anwser.status != 200:
+                logger.warning("failed to get response from server! error: {0}".format(anwser.status))
+            raw_data = str(anwser.read().decode())
+        except Exception as err:
             logger.log(logging.ERROR, err)  # when error happened, it often means there is still a connection
             # thus just ignore it.
-        self.client.putrequest(method, url)
-        self.put_def_header()
-        data = urllib.parse.quote(data, '=&')
-        self.client.putheader('Content-Length', len(data))
-        self.client.endheaders()
-        self.client.send(data.encode())
-        anwser = self.client.getresponse()
-        if anwser.status != 200:
-            logger.warning("failed to connect to server! error: {0}".format(anwser.status))
-        raw_data = str(anwser.read().decode())
         self.client.close()
         return raw_data
