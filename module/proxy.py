@@ -1,6 +1,7 @@
 import re
 import itertools
 import sys
+import threading
 import urllib.parse
 import urllib.request
 import time
@@ -103,10 +104,10 @@ class Proxy():
                         table = dom.find(selector)
                         if table.len == 0:
                             raise SettingReader.ProxySettingError("invalid selector!", selector)
-                        # td = threading.Thread(target=self._find_proxy, args=(table, pattern))
-                        # td.start()
-                        # self.__tasks.append(td)
-                        self._find_proxy(table, pattern)
+                        td = threading.Thread(target=self._find_proxy, args=(table, pattern))
+                        td.start()
+                        self.__tasks.append(td)
+                        # self._find_proxy(table, pattern)
                     except Exception as err:
                         logger.log(logger.BASIC, str(err))
         for task in self.__tasks:
