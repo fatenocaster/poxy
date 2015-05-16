@@ -11,7 +11,6 @@ from module.errsys import logger
 from htmldom import htmldom
 from module import webclient
 
-
 __author__ = 'yufeng'
 
 
