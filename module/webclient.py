@@ -1,7 +1,7 @@
 import http.client
 import urllib.parse
 
-from errsys import logger
+from module.errsys import logger
 
 
 __author__ = 'yufeng'
@@ -27,6 +27,7 @@ class WebClient():
         self.__client.set_tunnel(host, port)
 
     def __put_def_header(self):
+        pass
         self.__client.putheader("User-Agent", "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:38.0)")
         self.__client.putheader('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
         self.__client.putheader('Accept-Language', 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3')
@@ -71,11 +72,13 @@ class WebClient():
             self.__client.send(data.encode())
             anwser = self.__client.getresponse()
             if anwser.status != 200:
-                logger.warning("failed to get response from server! error: {0}".format(anwser.status))
+                logger.warning(
+                    "failed to get response from server! error: {0}".format(http.client.responses[anwser.status]))
             raw_data = str(anwser.read().decode())
         except Exception as err:
             logger.log(logger.DETAIL, str(err) + " when request to {0}".format(
-                self.__target.netloc))  # when error happened, it often means there is still a connection
+                self.__target.netloc + self.__target.path))  # when error happened, it often
+            # means there is still a connection
             # thus just ignore it.
         self.__client.close()
         return raw_data

@@ -1,4 +1,5 @@
 import urllib.parse
+import time
 
 __author__ = 'yufeng'
 import json
@@ -8,13 +9,15 @@ import itertools
 
 import jsmin
 
-from errsys import logger
+from module.errsys import logger
 from htmldom import htmldom
 from module import webclient
 
 
 def absolute_url(base_url, relative_url):
     base = urllib.parse.urlparse(base_url)
+    if base.scheme == "":
+        base = urllib.parse.urlparse("http://"+base_url)
     relative = urllib.parse.urlparse(relative_url)
     if relative.netloc == '' or relative.scheme == '':
         return base.netloc+relative.path
@@ -25,6 +28,10 @@ def absolute_url(base_url, relative_url):
 class SettingReader:
     def __init__(self):
         self.__setting = {}
+        self.interval = 1
+
+    def set_interval(self, interval):
+        self.interval = interval
 
     def read(self, fp):
         if isinstance(fp, str):
@@ -81,6 +88,7 @@ class ProxySettingReader(SettingReader):
                     selector = base_url["selector"][len(base_url["selector"])-1]
                 if attr is None:
                     attr = base_url["container_attr"][len(base_url["container_attr"])-1]
+                time.sleep(self.interval)
                 self.__web.set_target(item_url)
                 try:
                     html = self.__web.start_request()

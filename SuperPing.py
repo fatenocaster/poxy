@@ -1,20 +1,16 @@
+import argparse
 import time
+import sys
 
 __author__ = 'yufeng'
-import logging
+from module.errsys import logger
 import re
 import http.client
 # it's to help find alternative ips for
 # specific website.
-import webclient
+from module import webclient
 from htmldom import htmldom
 
-
-logger = logging.getLogger()
-logging.basicConfig(format='%(asctime)s  %(message)s')
-logger.BASIC = logging.WARN
-logger.DETAIL = logging.INFO
-logger.level = logger.DETAIL
 
 class Loaner:
     def __init__(self):
@@ -54,7 +50,6 @@ class Loaner:
         :param host_index:
         :return:a list with checked ips.
         """
-        self.timeout = 1000
         wc = webclient.WebClient()
         host_url, key = self._host[host_index]
         wc.set_target(host_url, timeout=self.timeout)
@@ -65,7 +60,7 @@ class Loaner:
                 if self.found_key_data(item.text(), host_index):
                     self._parser[host_index](item.text())
         except Exception as err:
-            logger.log(logger.ERROR, err)
+            logger.log(logger.BASIC, err)
         self.get_candidate(host_index)
         self.check()
         return self.candidates
@@ -107,6 +102,8 @@ class Loaner:
                 msg[key] = str(result.group(1))
         if msg.get("responsetime", None) is None:
             msg = {}
+        else:
+            msg.pop("responsetime")
         return msg
 
     def check(self):
@@ -148,6 +145,26 @@ class Loaner:
             if response:
                 result = self.parse_response(response, host_index)
                 if result != {}:
-                    self.candidates.append(result)
-                    logger.log(logger.DETAIL,
-                               "got an alpha ip:{0} delay:{1}ms".format(result["ip"], result["responsetime"]))
+                    if result not in self.candidates:
+                        self.candidates.append(result)
+                        logger.log(logger.DETAIL,
+                                   "got an alpha ip:{0}".format(result["ip"]))
+
+
+def super_ping():
+    arg_parser = argparse.ArgumentParser(description="a tool to make super ping.")
+    arg_parser.add_argument("--chanel", nargs="?", type=int, choices=[1, 2], default=1,
+                            help="choose the ping chanel.")
+    arg_parser.add_argument("--target", nargs="?", required=True,
+                            help="set the target to ping.")
+    arg = arg_parser.parse_args()
+    ping = Loaner()
+    ping.target = arg.target
+    if arg.chanel == 1:
+        ping.hunt(ping.chinaz)
+    elif arg.chanel == 2:
+        ping.hunt(ping.super_ping)
+
+
+if __name__ == "__main__":
+    super_ping()

@@ -35,6 +35,6 @@ Options:
 
 example:
 
-poxy -f -v -t 1000 --model=proxy --modellevel=1 -d https://www.google.com.hk/?gws_rd=ssl
+python poxy.py -f -v -t 1000 --model=proxy --modellevel=1 -d https://www.google.com.hk/?gws_rd=ssl
 
-poxy -f -v -t 1000 --model=alternate --modellevel=1 -d https://www.google.com.hk/?gws_rd=ssl
+python poxy.py -f -v -t 1000 --model=alternate --modellevel=1 -d https://www.google.com.hk/?gws_rd=ssl

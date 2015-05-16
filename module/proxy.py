@@ -3,12 +3,12 @@ import itertools
 import sys
 import urllib.parse
 import urllib.request
-import threading
+import time
 
-import SettingReader
-from errsys import logger
+from module import SettingReader
+from module.errsys import logger
 from htmldom import htmldom
-import webclient
+from module import webclient
 
 
 __author__ = 'yufeng'
@@ -47,6 +47,7 @@ class Proxy():
         self.format = "{0}:{1}\n"
         self.check = False
         self.target = "https://github.com"
+        self.interval = 1
         self.__tasks = []
 
     def get_proxies(self):
@@ -58,6 +59,7 @@ class Proxy():
         :return: final proxy collection setting.
         """
         setting_reader = SettingReader.ProxySettingReader()
+        setting_reader.set_interval(self.interval)
         self.__setting = setting_reader.read(setting)
         return self.__setting
 
@@ -93,6 +95,7 @@ class Proxy():
                         pattern = setting["pattern"][len(setting["pattern"]) - 1]
                     if selector is None:
                         selector = setting["selector"][len(setting["selector"]) - 1]
+                    time.sleep(self.interval)
                     self.__web.set_target(base_url)
                     try:
                         html = self.__web.start_request()
