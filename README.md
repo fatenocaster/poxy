@@ -1,40 +1,21 @@
-# poxy
-a useful tool to get proxy to the website which you can't reach at present.
+usage: poxy.py [-h] [-o [OUT]] [-f [FORMAT]] [--check] [--target [TARGET]]
+               [--config [CONFIG]] [--interval [INTERVAL]]
 
-only support windows with IPV4 at present.
+a tool to crawl proxies from web.
 
-now it support zh_CN and en_US locale.
+optional arguments:
+  -h, --help            show this help message and exit
+  -o [OUT], --out [OUT]
+                        the file writen proxies to. default: stdout
+  -f [FORMAT], --format [FORMAT]
+                        the proxy output format. default: "{0}:{1}\n". read
+                        help.html for more information.
+  --check               check the proxy validation.
+  --target [TARGET]     a url for checking proxy validation.
+                        default:https://github.com
+  --config [CONFIG]     the proxy setting file. default: proxy.settings
+  --interval [INTERVAL]
+                        the interval between two requests. some sever has
+                        strict limitation at it.
 
-NOTE: before using it, you have to get the r/w permission of hosts file.
-
-usage:
-
-search proxy for unreachable foreign websites .
-
-Options:
-
-Usage: poxy.py [OPTIONS]
-
-search proxy for unreachable foreign websites .
-
-Options:
-
--h --help               Display usage information and exit.
-
--v --verbose            Display detail information.
-
--t msec --timeout=msec  Set timeout time for connection tries.default is 1000ms
-
--d url --target=url     Set target url.
-
--f --force              force to overwrite hosts file if target is in it.
-
---model=X                 choose an model: proxy or alternate
-
---modellevel=X            set model level: 1 or greater.
-
-example:
-
-python poxy.py -f -v -t 1000 --model=proxy --modellevel=1 -d https://www.google.com.hk/?gws_rd=ssl
-
-python poxy.py -f -v -t 1000 --model=alternate --modellevel=1 -d https://www.google.com.hk/?gws_rd=ssl
+for more detail information,please read doc files.
