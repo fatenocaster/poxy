@@ -1,0 +1,23 @@
+{
+	"haodailiip":
+	{
+		"base_url":
+		{
+			"base_url":
+			{
+				"base_url":["http://www.haodailiip.com/"],
+				"selector": ["div.foot > div.column > a"],
+				"sequence": [0,1],
+				"pattern": ["href=\"([^\\s]+)\""],
+				"container_attr":["href"]
+			},
+			"selector": ["table.proxy_table + p > a"],
+			"sequence": [1,2,3],
+			"pattern": ["href=\"([^\\s]+)\""],
+			"container_attr":["href"]
+			
+		},
+		"selector":["table.proxy_table > tr"],
+		"pattern":["([\\d]+\\.[\\d]+\\.[\\d]+\\.[\\d]+)[^\\d]+([\\d]+)"]
+	}
+}
