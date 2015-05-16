@@ -1,0 +1,70 @@
+a setting file looks like that:
+//myproxysetting.txt
+{
+
+    "proxy_crawl1_setting_name":
+
+    {
+
+        "base_url":["..."] /*or {...} in complex condition*/, the final basic url is a list of urls of webs contain proxies.
+
+        "selector":[...],this is a css like selector.it helps to narrow down the scope of target urls. ref: http://thehtmldom.sourceforge.net/#searching
+
+        "pattern":[...]a regular expression. it is intent to search ip and port.it often like "(ip pattern)..(port pattren)"
+
+                note: the matched group is placed in --format option. {0},{1} would be replaced by the matched groups.
+
+    }
+
+}
+
+base_url is a list of urls whose web pages contain proxies at last.
+also, base_url can be a recursive definition.
+
+final base_url is the URL that contains proxy ips.
+note that base_url have 3 models from easy to difficult.
+  	
+  	model 1:"base_url":["www.xxx.xxx"]
+  	model 1 is the most ordinary form.it just contain a list of urls.
+	
+	
+  	model 2:
+  	base_url:	
+  	{
+  		"base_url":["www.xxx.xxx"],
+  		"selector": ["css selector expression"],
+  		"sequence":[0,2,...],
+  		"pattern": ["regular expression"],
+  	}
+  	the basic form of base_url. base_url in the block is model 1 form.
+	selector would locate the information we want.and sequence would select the selector results.
+	the pattern is to capture the data we want. the captured data would be the base_url's data finally.
+	that means model 2 will convert into model 1 after a serial of calculating.
+	
+	
+	
+  	model 3:
+  	"base_url":
+  	{
+  		"base_url":
+  		{
+  			"base_url":
+  			{
+  				"base_url":["www.xxx.xxx"], recursive loop again or just string
+  				"selector": ["css selector expression"],this is a css like selector.it helps to narrow down the scope of target urls. 
+														it has greater priority than pattern.
+  				"sequence":[0,2,...] as may get a few target url, so it choose what result to take.
+  				"pattern": ["regular expression"]regular expr for search target url.
+  				"container_attr":["tag attr name"]the tag selected by selector attribute value contains the url we want.only in base_url block.
+  			},
+  			"selector": ["css selector expression"],
+  			"sequence":[0,2,...],
+  			"pattern": ["regular expression"],
+  			"container_attr":["tag attr name"]
+  		},
+  		"selector": ["css selector expression"],
+  		"sequence":[0,2,...],
+  		"pattern": ["regular expression"],
+  		"container_attr":["tag attr name"]
+  	}
+	model 3 is a combination of model 2 and model 1. 

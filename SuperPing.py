@@ -65,7 +65,7 @@ class Loaner:
                 if self.found_key_data(item.text(), host_index):
                     self._parser[host_index](item.text())
         except Exception as err:
-            logger.log(logging.ERROR, err)
+            logger.log(logger.ERROR, err)
         self.get_candidate(host_index)
         self.check()
         return self.candidates
@@ -151,8 +151,3 @@ class Loaner:
                     self.candidates.append(result)
                     logger.log(logger.DETAIL,
                                "got an alpha ip:{0} delay:{1}ms".format(result["ip"], result["responsetime"]))
-
-
-t = Loaner()
-t.target = "www.google.com.hk"
-t.hunt(t.super_ping)

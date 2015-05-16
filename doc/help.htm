@@ -1,0 +1,230 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <title>HTML DOM Parser For Python</title>
+  <meta name="description" content="HTML parser which can be used for screen-scraping applications" />
+  <meta name="keywords" content="web scraping,data extraction,html parser,python,python 3.2,htmldom,thehtmldom,html dom parser " />
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link rel="stylesheet" type="text/css" href="style/style.css" />
+  <style type="text/css">
+  #main {
+	width: 1114px;
+}
+  </style>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-33280118-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+  </script>  
+</head>
+
+<body>
+  <div id="main">
+    <div id="header">
+      <div id="logo">
+        <div id="logo_text">
+          <!-- class="logo_colour", allows you to change the colour of the text -->
+          <h1><a>POXY <span class="logo_colour"></span></a></h1>
+          <h2>Proxy crawler For Python</h2>
+        </div>
+      </div>
+      <div id="menubar"><!--          <li><a href="index.html">Examples</a></li>-->      </div>
+    </div>
+    <div id="content_header"></div>
+    <div id="site_content">
+      <div class="sidebar"></div>
+      <div id="content">
+        <!-- insert the page content here -->
+        <p>Language Requirement: <strong>Python 3.4.x</strong></p>
+        <p>Platforms Available: <strong> Linux, </strong><strong>Windows</strong>,Mac os</p>
+        <h1 id="download">Download</h1>
+        <ul>
+          <li>You can download the latest version from github.com <a href="https://github.com/yufengzjj/poxy" target="_self">Poxy</a></li>
+        </ul>
+<h1 id="getting_started">Getting Started</h1>
+        <ul>
+             <li>Contents
+             <ul>
+                 <li><a href="#simple usage">Simple Usage</a></li>
+                 <li><a href="#option detail">Option Details </a></li>
+                 <li><a href="#proxy_setting">Proxy Crawl Setting  Rule</a></li>
+            
+           
+           <li id="simple usage">Use the poxy:</li>
+           optional arguments:
+           <li>
+             <table width="971" border="1">
+               <tbody>
+                 <tr>
+                   <td width="257">-h, --help</td>
+                   <td width="698">show  this help message and exit</td>
+                 </tr>
+                 <tr>
+                   <td>-o [OUT], --out [OUT]</td>
+                   <td>the file writen proxies to. default: stdout</td>
+                 </tr>
+                 <tr>
+                   <td height="25">-f [FORMAT], --format [FORMAT]</td>
+                   <td>the proxy output format. default: "{0}:{1}\n".</td>
+                 </tr>
+                 <tr>
+                   <td height="25">--check</td>
+                   <td>check the proxy validation.</td>
+                 </tr>
+                 <tr>
+                   <td height="25">--target [TARGET] </td>
+                   <td>a url for checking proxy validation.
+               default:https://github.com</td>
+                 </tr>
+                 <tr>
+                   <td height="25">--config [CONFIG] </td>
+                   <td>the proxy setting file. default: proxy.settings </td>
+                 </tr>
+               </tbody>
+             </table>
+             <p>example:</p>
+             <p>python.exe poxy.py --check -o myproxy.txt --target https://www.google.com</p>
+             <p>python.exe poxy.py --format &quot;{0}-{1}\n&quot;    #it will generate 231.321.213.11-8008 .etc.</p>
+             <p>python.exe poxy.py --config myproxy.config #see below for more details.<br>
+             </p>
+           </li>
+           <li>
+                <h4 id="option detail">Option Details:</h4>
+                <ul>
+                    <li>
+                      <table>
+                        <tr>
+                          <th width="144" class="spec">Option
+                          <th width="800" class="spec">Meaning
+                        </tr>
+                        <tr>
+                          <td>-f [FORMAT], --format [FORMAT]</td>
+                          <td><p>the format is the proxy output format. often {0} means proxy ip,{1}means proxy port. actully it depends on the pattern you have in proxy setting file. use --config to select a customize setting file.</p></td>
+                        </tr>
+                        <tr>
+                          <td>--check</td>
+                          <td>this option would check the proxy when crawled from web to request target.</td>
+                        </tr>
+                        <tr>
+                          <td>--target [TARGET] </td>
+                          <td>this url is used to check the proxy.</td>
+                        </tr>
+                        <tr>
+                          <td>--config [CONFIG] </td>
+                          <td>it will specify a customized proxy crawl setting.</td>
+                        </tr>
+                      </table>
+                    </li>
+                </ul>
+           </li>
+          <li>
+            <h4 id="proxy_setting">Proxy Crawl Settings.                </h4>
+            <p>1.basic concepts.</p>
+            <p>the setting use a json format.it supports // comment.</p>
+            <p>a validate setting is like that:</p>
+            <p>{</p>
+            <blockquote>
+              <p>&quot;proxy_crawl1_setting_name&quot;:</p>
+              <p>{              </p>
+              <blockquote>
+                <p>&quot;base_url&quot;:[&quot;...&quot;] /*or {...} in complex condition*/, //the final basic url is a list of urls of webs contain proxies.</p>
+                <p>&quot;selector&quot;:[...],//this is a css like selector.it helps to narrow down the scope of target urls. ref: <a href="http://thehtmldom.sourceforge.net/#searching" target="new">http://thehtmldom.sourceforge.net/#searching</a></p>
+                <p>&quot;pattern&quot;:[...]//a regular expression. it is intent to search ip and port.it often like &quot;(ip pattren)..(port pattren)&quot;</p>
+                <blockquote>
+                  <blockquote>
+                    <p>//note: the first &quot;(..)&quot; is used in --format optin {0}.                </p>
+                  </blockquote>
+                </blockquote>
+              </blockquote>
+              <p>}</p>
+            </blockquote>
+            <p>}</p>
+           </li>
+          <li>final base_url is the URL that contains proxy ips.<br>
+            note that base_url have 3 models from easy to difficult.<br>
+  <br>
+            model 1:&quot;base_url&quot;:[&quot;www.xxx.xxx&quot;]<br>
+  <br>
+            model 2:<br>
+            &quot;base_url&quot;: <br>
+          {
+          <ul>&quot;base_url&quot;:[&quot;www.xxx.xxx&quot;],<br>
+&quot;selector&quot;: [&quot;css selector expression&quot;],<br>
+&quot;sequence&quot;:[0,2,...],<br>
+&quot;pattern&quot;: [&quot;regular expression&quot;],
+          </ul>
+          </li>
+          }<br>
+            <br>
+            model 3:<br>
+            &quot;base_url&quot;:<br>
+          {
+          <blockquote>
+            <p>&quot;base_url&quot;:<br>
+{</p>
+            <blockquote>
+              <p>&quot;base_url&quot;:<br>
+{</p>
+              <blockquote>
+                <p>&quot;base_url&quot;:[&quot;www.xxx.xxx&quot;], recursive loop again or just string<br>
+&quot;selector&quot;: [&quot;css selector expression&quot;],as may get a few target url, so it choose what result to take.<br>
+&quot;sequence&quot;:[0,2,...] as may get a few target url, so it choose what result to take.<br>
+&quot;pattern&quot;: [&quot;regular expression&quot;]regular expr for search target url.<br>
+&quot;container_attr&quot;:[&quot;tag attr name&quot;]the tag selected by selector attribute value contains the url we want.</p>
+              </blockquote>
+              <p> <br>
+                },<br>
+                &quot;selector&quot;: [&quot;css selector expression&quot;],<br>
+                &quot;sequence&quot;:[0,2,...],<br>
+                &quot;pattern&quot;: [&quot;regular expression&quot;],<br>
+                &quot;container_attr&quot;:[&quot;tag attr name&quot;],            </p>
+            </blockquote>
+            <p><br>
+              },<br>
+  &quot;selector&quot;: [&quot;css selector expression&quot;],<br>
+  &quot;sequence&quot;:[0,2,...],<br>
+  &quot;pattern&quot;: [&quot;regular expression&quot;],<br>
+  &quot;container_attr&quot;:[&quot;tag attr name&quot;],</p>
+          </blockquote>
+          <p>}
+            
+          </p>
+          <p>examples:</p>
+          <p>{</p>
+          <p>&quot;xici&quot;:<br>
+          {<br></p>
+          <blockquote>
+            <p>&quot;base_url&quot;:<br>
+{</p>
+            <blockquote>
+              <p>&quot;base_url&quot;:[&quot;http://www.xici.net.co&quot;],<br>
+&quot;selector&quot;: [&quot;ul#nav &gt; li &gt; a&quot;],<br>
+&quot;sequence&quot;: [1,2,3,4,5],<br>
+&quot;pattern&quot;: [&quot;href=\&quot;([^\\s]+)\&quot;&quot;],<br>
+&quot;container_attr&quot;:[&quot;href&quot;]</p>
+            </blockquote>
+            <p>}</p>
+            <p><br>
+            &quot;selector&quot;:[&quot;table#ip_list &gt; tr&quot;],<br>
+            &quot;pattern&quot;:[&quot;([\\d]+\\.[\\d]+\\.[\\d]+\\.[\\d]+)[^\\d]+([\\d]+)&quot;]<br>
+            </p>
+          </blockquote>
+          <p>}
+          </p>
+          <p>}             </p>
+  </ul>more examples are in default setting file proxy.settings.             
+  <h2>poxy 's setting file excute route:  </h2>
+<br>
+  it will get the base_url web page, and use selector to locate proxies. then it use pattern regular expression<br>
+  to capture ip and port. the matched groups are used in --format(like &quot;{0}:{1}&quot;) option in oder.
+</body>
+</html>
